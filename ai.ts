@@ -6,10 +6,9 @@ export type MeterData = {
     image_quality: number;
 }
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
-const AI_MODEL = process.env.AI_MODEL || ""
 
-export async function extractMeterData(imageUrl: string) {
+
+export async function extractMeterData(imageUrl: string, OPENROUTER_API_KEY: string, AI_MODEL: string) {
     // const imageResponse = await fetch(imageUrl);
 
     // if (!imageResponse.ok) {
@@ -133,7 +132,7 @@ Return the result strictly in JSON format using this exact structure:
     throw new Error("Failed to extract meter data after multiple retries");
 }
 
-export async function validateConfig(): Promise<void> {
+export async function validateConfig(OPENROUTER_API_KEY: string, AI_MODEL: string): Promise<void> {
     console.log(`🔍 กำลังตรวจสอบ API Key และ Model: ${AI_MODEL}...`);
 
     // 1. ตรวจสอบรูปแบบเบื้องต้น (Basic Validation)

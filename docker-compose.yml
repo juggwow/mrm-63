@@ -1,0 +1,10 @@
+services:
+  mrm-63:
+    build: .
+    image: mrm-63
+    container_name: mrm-63
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config.json:/app/dist/config.json

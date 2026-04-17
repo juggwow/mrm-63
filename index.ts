@@ -1,6 +1,10 @@
 import { chromium } from 'playwright';
 import type { Browser, Page } from 'playwright';
 import { extractMeterData, validateConfig, type MeterData } from './ai.js';
+import { getAppConfig } from './server.js';
+import cron from 'node-cron';
+
+let isRunning = false;
 
 // 1. กำหนด Interface สำหรับข้อมูลพื้นฐาน (Box และ Confidence)
 interface DetectionBase {
@@ -35,16 +39,12 @@ async function fillDropDown(page: Page, id: string, value: string): Promise<void
     await page.waitForTimeout(1000);
 }
 
-const USERNAME = process.env.USERNAME || ""
-const PASSWORD = process.env.PASSWORD || ""
-const BILLPERIOD = process.env.BILLPERIOD || ""
-
-async function loginMrm() {
+async function loginMrm(USERNAME: string, PASSWORD: string, BILLPERIOD: string) {
     let retryCount = 0;
     const maxRetries = 3;
 
     while (retryCount < maxRetries) {
-        const browser: Browser = await chromium.launch({ headless: false });
+        const browser: Browser = await chromium.launch({ headless: true });
         const page: Page = await browser.newPage();
 
         try {
@@ -94,16 +94,24 @@ async function loginMrm() {
 
 
 async function runScraper(): Promise<void> {
-    await validateConfig();
-    if (!USERNAME || !PASSWORD || !BILLPERIOD) {
-        throw new Error("Missing environment variables");
+    if (isRunning) {
+        console.log("Already running");
+        return;
     }
+
+    const { openrouterApiKey: OPENROUTER_API_KEY, aiModel: AI_MODEL, username: USERNAME, password: PASSWORD, billperiod: BILLPERIOD } = getAppConfig();
+    if (!USERNAME || !PASSWORD || !BILLPERIOD || !OPENROUTER_API_KEY || !AI_MODEL) {
+        console.error("Missing environment variables");
+        return;
+    }
+
+    await validateConfig(OPENROUTER_API_KEY, AI_MODEL);
     let row = 1;
     let retryCount = 0;
     const maxRetries = 3;
     let isErr = false;
     try {
-        const l = await loginMrm()
+        const l = await loginMrm(USERNAME, PASSWORD, BILLPERIOD)
         if (!l) {
             throw new Error("Login failed");
         }
@@ -112,7 +120,7 @@ async function runScraper(): Promise<void> {
 
         while (retryCount < maxRetries) {
             if (isErr) {
-                const l = await loginMrm()
+                const l = await loginMrm(USERNAME, PASSWORD, BILLPERIOD)
                 if (!l) {
                     break
                 }
@@ -154,7 +162,7 @@ async function runScraper(): Promise<void> {
                 let meterData: MeterData
                 try {
                     console.log("ดึงข้อมูลจากรูปภาพ url: ", imageUrl)
-                    meterData = await extractMeterData(imageUrl)
+                    meterData = await extractMeterData(imageUrl, OPENROUTER_API_KEY, AI_MODEL)
                 } catch (e) {
                     console.log("ดึงข้อมูลจากรูปภาพไม่สำเร็จ err: ", e)
                     row++
@@ -199,12 +207,14 @@ async function runScraper(): Promise<void> {
         }
         await browser.close();
     } catch (e) {
-        throw new Error("Failed or finished")
+        console.log("Failed or finished err: ", e)
+    } finally {
+        isRunning = false;
     }
 }
 
-
-runScraper();
-
+cron.schedule('0 * * * *', () => {
+    runScraper();
+});
 
 
