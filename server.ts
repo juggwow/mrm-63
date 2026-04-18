@@ -16,6 +16,7 @@ export type AppConfig = {
   password: string | undefined;
   openrouterApiKey: string | undefined;
   aiModel: string | undefined;
+  enabled: boolean | undefined;
 }
 
 export function getAppConfig(): AppConfig {
@@ -47,6 +48,7 @@ app.get('/', (req, res) => {
           <p>รหัสผ่าน (Password): <br><input type="text" name="password" value="${config.password}"></p>
           <p>OpenRouter API Key: <br><input type="text" name="openrouterApiKey" value="${config.openrouterApiKey}"></p>
           <p>AI Model: <br><input type="text" name="aiModel" value="${config.aiModel}"></p>
+          <p>Enabled: <br><input type="checkbox" name="enabled" value="${config.enabled}"></p>
           <button type="submit" style="padding: 10px 20px; background: blue; color: white;">บันทึกข้อมูล</button>
         </form>
       </body>

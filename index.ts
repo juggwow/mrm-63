@@ -99,6 +99,8 @@ async function runScraper(): Promise<void> {
         return;
     }
 
+    isRunning = true;
+
     const { openrouterApiKey: OPENROUTER_API_KEY, aiModel: AI_MODEL, username: USERNAME, password: PASSWORD, billperiod: BILLPERIOD } = getAppConfig();
     if (!USERNAME || !PASSWORD || !BILLPERIOD || !OPENROUTER_API_KEY || !AI_MODEL) {
         console.error("Missing environment variables");
@@ -119,6 +121,12 @@ async function runScraper(): Promise<void> {
         let browser = l.browser
 
         while (retryCount < maxRetries) {
+            const { enabled } = getAppConfig();
+            if (!enabled) {
+                console.log("ปิดการทำงานอยู่");
+                await browser.close();
+                break;
+            }
             if (isErr) {
                 const l = await loginMrm(USERNAME, PASSWORD, BILLPERIOD)
                 if (!l) {
